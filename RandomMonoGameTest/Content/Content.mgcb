@@ -1,0 +1,36 @@
+
+#----------------------------- Global Properties ----------------------------#
+
+/outputDir:bin/$(Platform)
+/intermediateDir:obj/$(Platform)
+/platform:DesktopGL
+/config:
+/profile:Reach
+/compress:False
+
+#-------------------------------- References --------------------------------#
+
+
+#---------------------------------- Content ---------------------------------#
+
+font.spritefont
+  /importer:FontDescriptionImporter
+  /processor:FontDescriptionProcessor
+  /processorParam:PremultiplyAlpha=True
+
+Sounds/shoot.wav
+  /importer:WavImporter
+  /processor:SoundEffectProcessor
+
+Sounds/enemy_destroyed.wav
+  /importer:WavImporter
+  /processor:SoundEffectProcessor
+
+Sounds/game_over.wav
+  /importer:WavImporter
+  /processor:SoundEffectProcessor
+
+Sounds/victory.wav
+  /importer:WavImporter
+  /processor:SoundEffectProcessor
+
