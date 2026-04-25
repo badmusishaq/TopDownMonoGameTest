@@ -43,9 +43,19 @@ public class Game1 : Game
     private List<Bullet> _bullets;
 
     /// <summary>
+    /// A pool of reusable bullets to reduce allocations.
+    /// </summary>
+    private Queue<Bullet> _bulletPool;
+
+    /// <summary>
     /// The list of active enemies in the game.
     /// </summary>
     private List<Enemy> _enemies;
+
+    /// <summary>
+    /// The texture used to draw enemy triangles.
+    /// </summary>
+    private Texture2D _enemyTexture;
 
     /// <summary>
     /// The game manager that handles game state, scoring, and win/lose conditions.
@@ -102,6 +112,7 @@ public class Game1 : Game
         // Initialize collections
         _bullets = new List<Bullet>();
         _enemies = new List<Enemy>();
+        _bulletPool = new Queue<Bullet>();
 
         // Initialize managers
         _gameManager = GameManager.Instance;
@@ -128,6 +139,9 @@ public class Game1 : Game
         _pixelTexture = new Texture2D(GraphicsDevice, 1, 1);
         _pixelTexture.SetData(new[] { Color.White });
 
+        // Create a reusable triangle texture for enemies.
+        _enemyTexture = CreateTriangleTexture(GraphicsDevice, 20, 20);
+
         // Initialize the bitmap-based text renderer for cross-platform UI text.
         _textRenderer = new TextRenderer(GraphicsDevice);
 
@@ -137,6 +151,15 @@ public class Game1 : Game
         // Initialize player
         Vector2 playerStartPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight - 50);
         _player = new Player(_pixelTexture, playerStartPosition);
+
+        // Prepopulate a small bullet pool to avoid allocations during play.
+        for (int i = 0; i < 20; i++)
+        {
+            _bulletPool.Enqueue(new Bullet(_pixelTexture, new Vector2(-100, -100))
+            { 
+                IsActive = false 
+            });
+        }
 
         // Initialize UI
         _gameUI = new GameUI(_spriteBatch, _textRenderer, _graphics);
@@ -187,6 +210,7 @@ public class Game1 : Game
                 _bullets[i].Update(gameTime, new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight));
                 if (!_bullets[i].IsActive)
                 {
+                    _bulletPool.Enqueue(_bullets[i]);
                     _bullets.RemoveAt(i);
                 }
             }
@@ -261,8 +285,8 @@ public class Game1 : Game
     private void ShootBullet(GameTime gameTime)
     {
         Vector2 bulletPosition = new Vector2(_player.Position.X + _player.Size.X / 2 - 2.5f, _player.Position.Y);
-        Bullet newBullet = new Bullet(_pixelTexture, bulletPosition);
-        _bullets.Add(newBullet);
+        Bullet bullet = GetBulletFromPool(bulletPosition);
+        _bullets.Add(bullet);
         _lastBulletTime = gameTime.TotalGameTime;
 
         // Play shoot sound
@@ -277,7 +301,7 @@ public class Game1 : Game
     {
         int randomX = Random.Shared.Next(0, _graphics.PreferredBackBufferWidth - 20);
         Vector2 enemyPosition = new Vector2(randomX, 0);
-        Enemy newEnemy = new Enemy(_pixelTexture, enemyPosition);
+        Enemy newEnemy = new Enemy(_enemyTexture, enemyPosition);
         _enemies.Add(newEnemy);
         _lastEnemySpawnTime = gameTime.TotalGameTime;
     }
@@ -328,7 +352,12 @@ public class Game1 : Game
     /// </summary>
     private void RestartGame()
     {
-        // Clear all game objects
+        // Return bullets to the pool and clear active lists.
+        foreach (Bullet bullet in _bullets)
+        {
+            bullet.IsActive = false;
+            _bulletPool.Enqueue(bullet);
+        }
         _bullets.Clear();
         _enemies.Clear();
 
@@ -341,6 +370,42 @@ public class Game1 : Game
         // Reset timers
         _lastBulletTime = TimeSpan.Zero;
         _lastEnemySpawnTime = TimeSpan.Zero;
+    }
+
+    private Bullet GetBulletFromPool(Vector2 position)
+    {
+        if (_bulletPool.Count > 0)
+        {
+            Bullet bullet = _bulletPool.Dequeue();
+            bullet.Reset(position);
+            return bullet;
+        }
+
+        return new Bullet(_pixelTexture, position);
+    }
+
+    private Texture2D CreateTriangleTexture(GraphicsDevice graphicsDevice, int width, int height)
+    {
+        Texture2D texture = new Texture2D(graphicsDevice, width, height);
+        Color[] pixels = new Color[width * height];
+        Vector2 center = new(width / 2f, 0);
+        float halfWidth = width / 2f;
+
+        for (int y = 0; y < height; y++)
+        {
+            float rowWidth = ((float)(height - y) / height) * width;
+            int startX = (int)MathF.Floor((width - rowWidth) / 2f);
+            int endX = (int)MathF.Ceiling((width + rowWidth) / 2f);
+
+            for (int x = 0; x < width; x++)
+            {
+                bool inside = x >= startX && x < endX;
+                pixels[y * width + x] = inside ? Color.White : Color.Transparent;
+            }
+        }
+
+        texture.SetData(pixels);
+        return texture;
     }
 
     /// <summary>

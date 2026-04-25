@@ -82,6 +82,16 @@ public class Bullet
     }
 
     /// <summary>
+    /// Resets the bullet for reuse by the object pool.
+    /// </summary>
+    /// <param name="startPosition">The new starting position for the bullet.</param>
+    public void Reset(Vector2 startPosition)
+    {
+        Position = startPosition;
+        IsActive = true;
+    }
+
+    /// <summary>
     /// Gets the bounding rectangle of the bullet for collision detection.
     /// </summary>
     /// <returns>The bounding rectangle of the bullet.</returns>
