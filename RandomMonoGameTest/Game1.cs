@@ -128,8 +128,8 @@ public class Game1 : Game
         _pixelTexture = new Texture2D(GraphicsDevice, 1, 1);
         _pixelTexture.SetData(new[] { Color.White });
 
-        // Initialize the dynamic text renderer for UI text.
-        _textRenderer = new TextRenderer(GraphicsDevice, "Arial", 16f);
+        // Initialize the bitmap-based text renderer for cross-platform UI text.
+        _textRenderer = new TextRenderer(GraphicsDevice);
 
         // Load sounds from the Content/Sounds folder.
         _soundManager.LoadContent(Content.RootDirectory);
